@@ -55,14 +55,15 @@ exports.convertToUppercase = functions.database
 */
 
 
-exports.changeStatusWrite = functions.database.ref('/RFID/{rfid}/Device')
+exports.changeStatusWrite = functions.database.ref('/RFID/{rfid}/Flag')
     .onWrite((change, contex) => {
 
         // Grab the current value of what was written to the Realtime Database.
         const id = contex.params.rfid;
 
         var updateStatus;
-        
+        var device_id;
+        var flag;
         var ref = db.ref('RFID');
 
         var status;
@@ -77,6 +78,10 @@ exports.changeStatusWrite = functions.database.ref('/RFID/{rfid}/Device')
                 if(String(field.key) === "Device"){
                     device_id=field.val();
                     //console.log("device_id " + device_id);
+                } 
+                if(String(field.key) === "Flag"){
+                    flag=field.val();
+                    //console.log("device_id " + device_id);
 				} 
                 });
               });
@@ -86,6 +91,9 @@ exports.changeStatusWrite = functions.database.ref('/RFID/{rfid}/Device')
           });
           console.log("MyStatus "+ status);
 
+
+          //If Flag NOT 0
+          if(flag === 1){
           
           //const temp_id=1;
           //Update Device Id -----------
@@ -106,7 +114,18 @@ exports.changeStatusWrite = functions.database.ref('/RFID/{rfid}/Device')
         }
 
         console.log("updateStatus "+ updateStatus);
-        return change.after.ref.parent.child('Status').set(updateStatus);
+
+        //update Status
+        var statusRef = db.ref('/RFID/'+ id + '/Status');
+        statusRef.transaction(function (current_value) {
+            return updateStatus;
+        });
+
+        return change.after.ref.parent.child('Flag').set(0);
+        }
+        else{                       //If Flag is 0
+            return;
+        }
     })
 
 
