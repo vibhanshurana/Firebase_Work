@@ -73,21 +73,94 @@ exports.changeStatusWrite = functions.database.ref('/RFID/{rfid}/Device')
                    // console.log("field " + field.key + " value " + field.val());
                 if(String(field.key) === "Status"){
                     status=field.val();
+                } 
+                if(String(field.key) === "Device"){
+                    device_id=field.val();
+                    //console.log("device_id " + device_id);
 				} 
                 });
               });
+
 		}, function (errorObject) {
             console.log("The read failed: " + errorObject.code);
           });
           console.log("MyStatus "+ status);
 
-		  
-        if(status === "1"){
-            updateStatus = "0";
+          
+          //const temp_id=1;
+          //Update Device Id -----------
+          //var Device_ref = db.ref('AVL');
+          var upvotesRef = db.ref('/Device/'+ device_id + '/Available');
+
+        if(status === 1){
+            updateStatus = 0;
+            upvotesRef.transaction(function (current_value) {
+                return (current_value || 0) + 1;
+            });
         }
         else{
-            updateStatus = "1";
+            updateStatus = 1;
+            upvotesRef.transaction(function (current_value) {
+                return (current_value || 0) - 1;
+            });
         }
+
         console.log("updateStatus "+ updateStatus);
         return change.after.ref.parent.child('Status').set(updateStatus);
     })
+
+
+
+//onWrite on Device
+/*
+exports.changeAvalibility = functions.database.ref('/RFID/{rfid}/Status')
+    .onWrite((change, contex) => {
+
+        // Grab the current value of what was written to the Realtime Database.
+        const id = contex.params.rfid;
+
+        var status;
+        var updateStatus;
+        var device_id;
+        
+        var ref = db.ref('RFID');
+        console.log("RFID_id " + id);
+      
+        // Attach an asynchronous callback to read the data at our posts reference
+        ref.orderByKey().equalTo(id).on("value", function(snapshot) {
+            snapshot.forEach(function(data) {
+                data.forEach(function(field) {
+                   // console.log("field " + field.key + " value " + field.val());
+                if(String(field.key) === "Status"){
+                    status=field.val();
+                } 
+                if(String(field.key) === "Device"){
+                    device_id=field.val();
+                    console.log("device_id " + device_id);
+				} 
+                });
+              });
+
+              var Device_ref = db.ref('AVL');
+
+           /*   const countRef = snapshot.ref.parent.parent.child('AVL')
+              return countRef.transaction(count => {
+                  return count + 1
+              })
+              
+            
+             Device_ref.set({
+               
+                  CAT: "100"
+                
+              });
+              
+		}, function (errorObject) {
+            console.log("The read failed: " + errorObject.code);
+          });
+         
+
+        
+        return //change.after.ref.parent.child('Status').set(updateStatus);
+    })
+    */
